@@ -79,7 +79,7 @@ void draw(){
           println(v.z);
       
       pushMatrix();
-        // Scale up by 200
+        // Scale up by 200S
         float factor = 200;
         translate(v.x * factor, v.y * factor, factor-v.z * factor);
         // Draw a point
