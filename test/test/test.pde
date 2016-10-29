@@ -7,8 +7,10 @@ float angle;
 int skip ;
 // We'll use a lookup table so that we don't have to repeat the math over and over
 float[] depthLookUp = new float[2048];
-
+float bigDist = 0.40f, smallDist = 0.05f;
 int row = 350, row1 = 370;
+ArrayList<CornerLeft> listaCornerLeft = new ArrayList<CornerLeft>();
+ArrayList<CornerRight> listaCornerRight = new ArrayList<CornerRight>();
 
 
 void setup(){
@@ -16,7 +18,7 @@ void setup(){
   size(800, 600, P3D);
   kinect = new Kinect(this);
   kinect.initDepth();
-  skip = 10;
+  skip = 7;
   angle = kinect.getTilt();
  
   depthLookUp = new float[2048];
@@ -52,14 +54,13 @@ void draw(){
 
       if (y == row || y == row1)
       {
-        if (x>skip && x < kinect.width - skip)
+        if (x>skip && x < kinect.width - skip*1)
         {
           PVector m1 = depthToWorld(x-skip, y, depth[x-skip + y * kinect.width]);
           PVector p1 = depthToWorld(x+skip, y, depth[x+skip + y * kinect.width]);
-          if (isCorner(m1.z,v.z,p1.z))
+          if (isCorner(m1.z,v.x,v.y,v.z,p1.z))
           {
             strokeWeight(10);
-            stroke(0,0,255);
           }
           else
             stroke(255,0,0);
@@ -89,12 +90,21 @@ void draw(){
   }
 }
 
-boolean isCorner(float m1, float p , float p1)
+boolean isCorner(float m1, float px, float py, float p , float p1)
 {
   boolean cond = false;
-  if (abs(p1-m1)>= 0.20 && abs(p-p1)< 5 && abs(p-m1)< 5)
+  if ((p1-m1)<= -bigDist && abs(p-m1) <= smallDist && (p-p1)>=bigDist)
+  {
+    stroke(255,0,255);
+    listaCornerLeft.add(new CornerLeft(px,py));
     cond =  true;
-    
+  }
+  else if ((p1-m1)>= bigDist && abs(p-p1) <= smallDist && (p-m1) >= bigDist)
+  {
+    stroke(0,255,0);
+    listaCornerRight.add(new CornerRight(px,py)); 
+    cond =  true;
+  }    
   return cond;
 }
 
