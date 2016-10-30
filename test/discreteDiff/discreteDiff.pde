@@ -12,7 +12,11 @@ float bigDist = 0.30f, smallDist = 0.07f;
 int row = 350, row1 = 370;
 ArrayList<CornerLeft> listaCornerLeft = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRight = new ArrayList<CornerRight>();
+float[] corners = new float[10];
+MedianFilter medLine = new MedianFilter((byte)3,0);
 
+float[] filtLine;
+int contSkip = 0;
 
 void setup(){
   // Rendering in P3D
@@ -28,6 +32,7 @@ void setup(){
     depthLookUp[i] = rawDepthToMeters(i);
   }
   println(" f "+ kinect.width + " ; " + kinect.height);
+  filtLine = new float[(int) (kinect.width/skip)+1];
 }
 
 void draw(){
@@ -37,29 +42,41 @@ void draw(){
   //kinect.setTilt(angle);
   
   
-  // Translate and rotate
+ // Translate and rotate
   translate(width/2, height/2, 300);
   stroke(255);
   beginShape(POINTS);
   strokeWeight(2);
   
-  for(int x = 0; x < kinect.width ; x += skip) {
+  
+  for(int x = 0; x < kinect.width ; x += skip) { 
+    //medLine.in((float) depth[x+row*kinect.width]);
+    filtLine[contSkip] = (float) depth[x+row*kinect.width];//medLine.out();
+    contSkip++;
+  }  
+  
+  //print(" LEN " +filtLine.length + "skippate" + contSkip);
+  contSkip = 0;
+  //print("Number of corners: " + detectDiscontinuities(filtLine) +  "\n");
+    
+  for(int x = 0; x < kinect.width ; x += skip) {   
     for(int y = 0; y < kinect.height; y += skip) {
          
       int offset = x + y * kinect.width;
-
 
       // Convert kinect data to world xyz coordinate
       int rawDepth = depth[offset];
       PVector v = depthToWorld(x, y, rawDepth);
 
-      if (y == row || y == row1)
+      if (y == row && v.z <= 5)
       {
-        if (x>skip && x < kinect.width - skip*1)
+        if (x>skip && x < kinect.width - skip*2)
         {
+          ///println(filtLine[x-2*skip] + "\t" + filtLine[x-skip] + "\t" + filtLine[x]);
           PVector m1 = depthToWorld(x-skipMes, y, depth[x-skipMes + y * kinect.width]);
           PVector p1 = depthToWorld(x+skipMes, y, depth[x+skipMes + y * kinect.width]);
-          if (isCorner(m1.z,v.x,v.y,v.z,p1.z))
+          PVector p2 = depthToWorld(x+skipMes, y, depth[x+skipMes + y * kinect.width]);
+          if (isCorner(m1.z,v.x,v.y,v.z,p1.z,p2.z))
           {
             strokeWeight(10);
           }
@@ -91,10 +108,27 @@ void draw(){
   }
 }
 
-boolean isCorner(float m1, float px, float py, float p , float p1)
+int detectDiscontinuities(float[] a)
+{
+  int cont = 0;
+  for (int i = 1; i < a.length-1; i++)
+  {
+    if (a[i]-a[i-1]<-bigDist){
+        listaCornerLeft.add(new CornerLeft(i,row));
+        cont++;
+    }
+    else if (a[i]-a[i-1]>bigDist){
+        listaCornerRight.add(new CornerRight(i,row));
+         cont++;   
+    }
+  }  
+  return cont; 
+}
+
+boolean isCorner(float m1, float px, float py, float p , float p1, float p2)
 {
   boolean cond = false;
-  if ((p1-m1)<= -bigDist /*&& abs(p-p1) <= smallDist */&& (p-m1)<= -bigDist*0.9)
+  if ((p1-m1)<= -bigDist && abs(p-p1) <= smallDist && abs(p1-p2) <= smallDist && (p-m1)<= -bigDist)
   {
     stroke(255,0,255);
     listaCornerLeft.add(new CornerLeft(px,py));
