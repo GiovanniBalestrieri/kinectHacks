@@ -1,4 +1,8 @@
 import org.openkinect.processing.*;
+import peasy.*;
+
+
+PeasyCam cam;
 
 Kinect kinect;
 PImage img;
@@ -21,6 +25,14 @@ int contSkip = 0;
 void setup(){
   // Rendering in P3D
   size(800, 600, P3D);
+  
+  frameRate(20);
+  
+  cam = new PeasyCam(this, 100);
+  cam.setMinimumDistance(5);
+  cam.setMaximumDistance(1500);
+  cam.setYawRotationMode();
+  
   kinect = new Kinect(this);
   kinect.initDepth();
   skip = 7;
@@ -37,9 +49,7 @@ void setup(){
 
 void draw(){
   background(0);
-  //angle = angle - 0.1;
   depth = kinect.getRawDepth();
-  //kinect.setTilt(angle);
   
   
  // Translate and rotate
@@ -94,8 +104,6 @@ void draw(){
         strokeWeight(2);
         stroke(255);  
       }
-      if (x == kinect.width/2 && y == kinect.height/2)
-          println(v.z);
       
       pushMatrix();
         // Scale up by 200S
@@ -105,7 +113,25 @@ void draw(){
         point(0,0);
       popMatrix();
     }
-  }
+  }  
+}
+
+
+void keyPressed() {
+  //if (key == CODED) {
+     if (key == 'a') {
+      angle = angle + 1;
+      kinect.setTilt(angle);
+      println("UP");
+    } 
+    else if (key == 'b'){
+      angle = angle - 1;
+      kinect.setTilt(angle);
+      println("DOWN");
+      }
+  //} else {
+   // println("boh");
+  //}
 }
 
 int detectDiscontinuities(float[] a)
