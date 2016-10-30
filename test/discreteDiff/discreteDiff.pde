@@ -19,7 +19,9 @@ ArrayList<CornerRight> listaCornerRight = new ArrayList<CornerRight>();
 float[] corners = new float[10];
 MedianFilter medLine = new MedianFilter((byte)3,0);
 
-float[] filtLine;
+int[] filtLine1;
+int[] filtLine2;
+int[] filtLine3;
 int contSkip = 0;
 
 void setup(){
@@ -44,7 +46,9 @@ void setup(){
     depthLookUp[i] = rawDepthToMeters(i);
   }
   println(" f "+ kinect.width + " ; " + kinect.height);
-  filtLine = new float[(int) (kinect.width/skip)+1];
+  filtLine1 = new int[(int) (kinect.width/skip)+1];
+  filtLine2 = new int[(int) (kinect.width/skip)+1];
+  filtLine3 = new int[(int) (kinect.width/skip)+1];
 }
 
 void draw(){
@@ -52,18 +56,14 @@ void draw(){
   depth = kinect.getRawDepth();
   
   
- // Translate and rotate
-  translate(width/2, height/2, 300);
+  // Translate and rotate
+  translate(width/2, height/2, 1);
   stroke(255);
   beginShape(POINTS);
   strokeWeight(2);
   
-  
-  for(int x = 0; x < kinect.width ; x += skip) { 
-    //medLine.in((float) depth[x+row*kinect.width]);
-    filtLine[contSkip] = (float) depth[x+row*kinect.width];//medLine.out();
-    contSkip++;
-  }  
+  saveRowsDepth();
+  findCorners(filtLine1,filtLine2,filtLine3);
   
   //print(" LEN " +filtLine.length + "skippate" + contSkip);
   contSkip = 0;
@@ -116,6 +116,38 @@ void draw(){
   }  
 }
 
+void saveRowsDepth(){
+  for(int x = 0; x < kinect.width ; x += skip) { 
+    //medLine.in((float) depth[x+row*kinect.width]);
+    filtLine1[contSkip] = (int) depth[x+row*kinect.width];
+    filtLine2[contSkip] = (int) depth[x+(row+1)*kinect.width];
+    filtLine3[contSkip] = (int) depth[x+(row+2)*kinect.width];
+    contSkip++;
+  }   
+}
+
+void findCorners(int[] a1, int[] a2, int[] a3){  
+  for(int x = 0; x < kinect.width ; x += skip) 
+  { 
+    PVector v1 = depthToWorld(x, row, a1[x]);
+    PVector v2 = depthToWorld(x, row, a2[x]);
+    PVector v3 = depthToWorld(x, row, a3[x]);
+    if (v1.z <= 5 && v2.z <= 5 && v3.z <= 5)
+    {
+      PVector m1 = depthToWorld(x-skipMes, row, a1[x-skipMes]);
+      PVector p1 = depthToWorld(x+skipMes, row, a1[x+skipMes]);
+      PVector p2 = depthToWorld(x+skipMes, row, a1[x+skipMes]);
+      if (isCorner(m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
+      {
+        strokeWeight(10);
+      }
+      else
+      {
+        stroke(255,0,0);
+      }
+    }
+  }
+}
 
 void keyPressed() {
   //if (key == CODED) {
