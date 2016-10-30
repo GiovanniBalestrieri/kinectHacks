@@ -29,9 +29,9 @@ void setup(){
   frameRate(20);
   
   cam = new PeasyCam(this, 100);
-  cam.setMinimumDistance(5);
+  cam.setMinimumDistance(0);
   cam.setMaximumDistance(1500);
-  cam.setYawRotationMode();
+  cam.setSuppressRollRotationMode();
   
   kinect = new Kinect(this);
   kinect.initDepth();
