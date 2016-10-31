@@ -14,8 +14,20 @@ int skipMes = 14;
 float[] depthLookUp = new float[2048];
 float bigDist = 0.30f, smallDist = 0.07f;
 int row = 350, row1 = 370;
-ArrayList<CornerLeft> listaCornerLeft = new ArrayList<CornerLeft>();
-ArrayList<CornerRight> listaCornerRight = new ArrayList<CornerRight>();
+
+int scanUp = 5, scanDown = 5;
+
+ArrayList<CornerLeftUp> listaCornerLeftUp = new ArrayList<CornerLeftUp>();
+ArrayList<CornerRightUp> listaCornerRightUp = new ArrayList<CornerRightUp>();
+
+
+ArrayList<CornerLeftDown> listaCornerLeftDown = new ArrayList<CornerLeftDown>();
+ArrayList<CornerRightDown> listaCornerRightDown = new ArrayList<CornerRightDown>();
+
+
+
+ArrayList<CornerLeftMid> listaCornerLeftMid = new ArrayList<CornerLeftMid>();
+ArrayList<CornerRightMid> listaCornerRightMid = new ArrayList<CornerRightMid>();
 
 // Store laserScans
 ArrayList<PVector[]> scans = new ArrayList<PVector[]>();
@@ -54,12 +66,7 @@ void setup(){
   {
     depthLookUp[i] = rawDepthToMeters(i);
   }
-  /*
-  println(" f "+ kinect.width + " ; " + kinect.height);
-  filtLine1 = new int[(int) (kinect.width/skip)+1];
-  filtLine2 = new int[(int) (kinect.width/skip)+1];
-  filtLine3 = new int[(int) (kinect.width/skip)+1];
-  */
+  
   println(" f "+ kinect.width + " ; " + kinect.height);
   filtLine1 = new PVector[(kinect.width)];
   filtLine2 = new PVector[(kinect.width)];
@@ -125,18 +132,34 @@ void cleanCornersMemory(){
       // then you cannot use the enhanced loop syntax.
       // In addition, when deleting in order to hit all elements, 
       // you should loop through it backwards, as shown here:
-      for (int i = listaCornerLeft.size() - 1; i >= 0; i--) {
-        listaCornerLeft.remove(i);
+      for (int i = listaCornerLeftUp.size() - 1; i >= 0; i--) {
+        listaCornerLeftUp.remove(i);
       } 
-      for (int i = listaCornerRight.size() - 1; i >= 0; i--) {
-        listaCornerRight.remove(i);
+      for (int i = listaCornerRightUp.size() - 1; i >= 0; i--) {
+        listaCornerRightUp.remove(i);
+      } 
+      
+      
+      for (int i = listaCornerLeftMid.size() - 1; i >= 0; i--) {
+        listaCornerLeftMid.remove(i);
+      } 
+      for (int i = listaCornerRightMid.size() - 1; i >= 0; i--) {
+        listaCornerRightMid.remove(i);
+      } 
+      
+      
+      for (int i = listaCornerLeftDown.size() - 1; i >= 0; i--) {
+        listaCornerLeftDown.remove(i);
+      } 
+      for (int i = listaCornerRightDown.size() - 1; i >= 0; i--) {
+        listaCornerRightDown.remove(i);
       } 
       historyClean = 0;
   }
 }
 
 void drawScenePCL(){  
- println("CL: " + listaCornerLeft.size()+ " CR: " + listaCornerRight.size());
+ println("UPP\t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
   
  for(int x = 0; x < kinect.width ; x += skip) {   
     for(int y = 0; y < kinect.height; y += skip) {         
@@ -148,8 +171,9 @@ void drawScenePCL(){
       strokeWeight(2);
       stroke(255);  
       
-      if (y == row)
+      if (y == row || y == (row+scanUp*skip) || y == (row-scanDown*skip))
       {
+         strokeWeight(4);
          stroke(255,0,0);
       }
       
@@ -164,15 +188,23 @@ void drawScenePCL(){
   }   
 }
 
+void detectObjectDepth()
+{
+  for (int i = 0; i < listaCornerLeft.size(); i++)
+  {
+      
+  }
+}
+
 void saveRowsDepth(){
   filtLine1 = scans.get(0);
   filtLine2 = scans.get(1);
   filtLine3 = scans.get(2);
   
     for(int x = 0; x < kinect.width ; x += 1) {       
-      filtLine1[x] = new PVector(x,row,depth[x+row*kinect.width]);
-      filtLine2[x] = new PVector(x,(row+20), depth[x+(row+20)*kinect.width]);
-      filtLine3[x] = new PVector(x,(row-20),depth[x+(row-20)*kinect.width]);
+      filtLine1[x] = new PVector(x,(row+5*scanUp), depth[x+(row+5*scanUp)*kinect.width]);
+      filtLine2[x] = new PVector(x,row,depth[x+row*kinect.width]);
+      filtLine3[x] = new PVector(x,(row-5*scanDown),depth[x+(row-5*scanDown)*kinect.width]);
     }   
   
 }
@@ -183,7 +215,7 @@ void findCorners(){
   {
     for(int x = 3*skipMes; x < scans.get(I).length-2*skipMes ; x++) 
     { 
-      PVector v1 = depthToWorld(x, row, (int) (scans.get(I)[x]).z);
+      PVector v1 = depthToWorld((int) (scans.get(I)[x]).x, (int) (scans.get(I)[x]).y, (int) (scans.get(I)[x]).z);
       
       if (v1.z <= 5)
       {      
@@ -192,7 +224,7 @@ void findCorners(){
         PVector p1 = depthToWorld((int) (scans.get(I)[x+skipMes]).x, (int) (scans.get(I)[x+skipMes]).y, (int)  (scans.get(I)[x+skipMes]).z);
         PVector p2 = depthToWorld((int) (scans.get(I)[x+2*skipMes]).x, (int) (scans.get(I)[x+2*skipMes]).y, (int)  (scans.get(I)[x+2*skipMes]).z);
         
-        if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
+        if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z,I))
         {
           // Corner Found
         }
@@ -201,36 +233,29 @@ void findCorners(){
   }
 }
 
-int detectDiscontinuities(float[] a)
-{
-  int cont = 0;
-  for (int i = 1; i < a.length-1; i++)
-  {
-    if (a[i]-a[i-1]<-bigDist){
-        listaCornerLeft.add(new CornerLeft(i,row, a[i]));
-        cont++;
-    }
-    else if (a[i]-a[i-1]>bigDist){
-        listaCornerRight.add(new CornerRight(i,row, a[i]));
-         cont++;   
-    }
-  }  
-  return cont; 
-}
-
-boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2)
+boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2,int i)
 {
   boolean cond = false;
   if ((p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist */ && (pz-m3) <= -bigDist)
   {
     stroke(255,0,255);
-    listaCornerLeft.add(new CornerLeft(px,py,pz));
+    if (i == 0)
+      listaCornerLeftUp.add(new CornerLeftUp(px,py,pz));
+    if (i == 1)
+      listaCornerLeftMid.add(new CornerLeftMid(px,py,pz));
+    if (i == 2)
+      listaCornerLeftDown.add(new CornerLeftDown(px,py,pz));
     cond =  true;
   }
   else if ((p2-m3) >= bigDist &&  (p1-m1) >= bigDist && abs(p1-p2) <= smallDist /* && abs(p1-p2) <= smallDist */ && abs(pz-m3) <= smallDist /*&& abs(pz-m3) <= smallDist */)
   {
     stroke(0,255,0);
-    listaCornerRight.add(new CornerRight(px,py,pz)); 
+    if (i == 0)
+      listaCornerRightUp.add(new CornerRightUp(px,py,pz)); 
+    if (i == 1)
+      listaCornerRightMid.add(new CornerRightMid(px,py,pz)); 
+    if (i == 2)
+      listaCornerRightDown.add(new CornerRightDown(px,py,pz)); 
     cond =  true;
   }    
   return cond;
@@ -259,10 +284,6 @@ float rawDepthToMeters(int depthValue) {
   return 0.0f;
 }
 
-void drawMax()
-{
-  
-}
 
 void drawCorners(){
   strokeWeight(10);
