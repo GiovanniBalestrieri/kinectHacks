@@ -17,17 +17,14 @@ int row = 350, row1 = 370;
 
 int scanUp = 5, scanDown = 5;
 
-ArrayList<CornerLeftUp> listaCornerLeftUp = new ArrayList<CornerLeftUp>();
-ArrayList<CornerRightUp> listaCornerRightUp = new ArrayList<CornerRightUp>();
+ArrayList<CornerLeft> listaCornerLeftUp = new ArrayList<CornerLeft>();
+ArrayList<CornerRight> listaCornerRightUp = new ArrayList<CornerRight>();
 
+ArrayList<CornerLeft> listaCornerLeftDown = new ArrayList<CornerLeft>();
+ArrayList<CornerRight> listaCornerRightDown = new ArrayList<CornerRight>();
 
-ArrayList<CornerLeftDown> listaCornerLeftDown = new ArrayList<CornerLeftDown>();
-ArrayList<CornerRightDown> listaCornerRightDown = new ArrayList<CornerRightDown>();
-
-
-
-ArrayList<CornerLeftMid> listaCornerLeftMid = new ArrayList<CornerLeftMid>();
-ArrayList<CornerRightMid> listaCornerRightMid = new ArrayList<CornerRightMid>();
+ArrayList<CornerLeft> listaCornerLeftMid = new ArrayList<CornerLeft>();
+ArrayList<CornerRight> listaCornerRightMid = new ArrayList<CornerRight>();
 
 // Store laserScans
 ArrayList<PVector[]> scans = new ArrayList<PVector[]>();
@@ -176,6 +173,8 @@ void drawScenePCL(){
          strokeWeight(4);
          stroke(255,0,0);
       }
+ 
+ // CheckObj
       
       pushMatrix();
         // Scale up by 200S
@@ -190,9 +189,9 @@ void drawScenePCL(){
 
 void detectObjectDepth()
 {
-  for (int i = 0; i < listaCornerLeft.size(); i++)
+  for (int i = 0; i < listaCornerLeftMid.size(); i++)
   {
-      
+      // (listaCornerLeftMid.get(i)).coordX;
   }
 }
 
@@ -236,26 +235,26 @@ void findCorners(){
 boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2,int i)
 {
   boolean cond = false;
-  if ((p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist */ && (pz-m3) <= -bigDist)
+  if (/*(p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist &&*/  (pz-m3) <= -bigDist)
   {
     stroke(255,0,255);
     if (i == 0)
-      listaCornerLeftUp.add(new CornerLeftUp(px,py,pz));
+      listaCornerLeftUp.add(new CornerLeft(px,py,pz,i));
     if (i == 1)
-      listaCornerLeftMid.add(new CornerLeftMid(px,py,pz));
+      listaCornerLeftMid.add(new CornerLeft(px,py,pz,i));
     if (i == 2)
-      listaCornerLeftDown.add(new CornerLeftDown(px,py,pz));
+      listaCornerLeftDown.add(new CornerLeft(px,py,pz,i));
     cond =  true;
   }
   else if ((p2-m3) >= bigDist &&  (p1-m1) >= bigDist && abs(p1-p2) <= smallDist /* && abs(p1-p2) <= smallDist */ && abs(pz-m3) <= smallDist /*&& abs(pz-m3) <= smallDist */)
   {
     stroke(0,255,0);
     if (i == 0)
-      listaCornerRightUp.add(new CornerRightUp(px,py,pz)); 
+      listaCornerRightUp.add(new CornerRight(px,py,pz,i)); 
     if (i == 1)
-      listaCornerRightMid.add(new CornerRightMid(px,py,pz)); 
+      listaCornerRightMid.add(new CornerRight(px,py,pz,i)); 
     if (i == 2)
-      listaCornerRightDown.add(new CornerRightDown(px,py,pz)); 
+      listaCornerRightDown.add(new CornerRight(px,py,pz,i)); 
     cond =  true;
   }    
   return cond;
@@ -288,12 +287,12 @@ float rawDepthToMeters(int depthValue) {
 void drawCorners(){
   strokeWeight(10);
   stroke(255,0,255);
-  println("CL: " + listaCornerLeft.size()+ " CR: " + listaCornerRight.size());
-  for (int i = 0; i < listaCornerLeft.size(); i++)
+  println("UP \t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
+  for (int i = 0; i < listaCornerLeftUp.size(); i++)
   {
-    float x = (listaCornerLeft.get(i)).coordX;
-    float y = (listaCornerLeft.get(i)).coordY;
-    float z = (listaCornerLeft.get(i)).coordZ;
+    float x = (listaCornerLeftUp.get(i)).coordX;
+    float y = (listaCornerLeftUp.get(i)).coordY;
+    float z = (listaCornerLeftUp.get(i)).coordZ;
     pushMatrix();
       // Scale up by 200S
       float factor = 200;
@@ -303,11 +302,11 @@ void drawCorners(){
     popMatrix();
   }
   stroke(0,255,0);
-  for (int i = 1; i < listaCornerRight.size(); i++)
+  for (int i = 1; i < listaCornerRightUp.size(); i++)
   {
-    float x = (listaCornerRight.get(i)).coordX;
-    float y = (listaCornerRight.get(i)).coordY;
-    float z = (listaCornerRight.get(i)).coordZ;
+    float x = (listaCornerRightUp.get(i)).coordX;
+    float y = (listaCornerRightUp.get(i)).coordY;
+    float z = (listaCornerRightUp.get(i)).coordZ;
     pushMatrix();
       // Scale up by 200S
       float factor = 200;
@@ -316,6 +315,72 @@ void drawCorners(){
       point(0,0);
     popMatrix();
   }
+  
+  // MID
+  
+  
+  stroke(255,0,255);
+  println("Mid \t\tCL: " + listaCornerLeftMid.size()+ " CR: " + listaCornerRightMid.size());
+  for (int i = 0; i < listaCornerLeftMid.size(); i++)
+  {
+    float x = (listaCornerLeftMid.get(i)).coordX;
+    float y = (listaCornerLeftMid.get(i)).coordY;
+    float z = (listaCornerLeftMid.get(i)).coordZ;
+    pushMatrix();
+      // Scale Mid by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+  stroke(0,255,0);
+  for (int i = 1; i < listaCornerRightMid.size(); i++)
+  {
+    float x = (listaCornerRightMid.get(i)).coordX;
+    float y = (listaCornerRightMid.get(i)).coordY;
+    float z = (listaCornerRightMid.get(i)).coordZ;
+    pushMatrix();
+      // Scale Mid by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+  
+  // DOWN
+  
+  stroke(255,0,255);
+  println("Down \t\tCL: " + listaCornerLeftDown.size()+ " CR: " + listaCornerRightDown.size());
+  for (int i = 0; i < listaCornerLeftDown.size(); i++)
+  {
+    float x = (listaCornerLeftDown.get(i)).coordX;
+    float y = (listaCornerLeftDown.get(i)).coordY;
+    float z = (listaCornerLeftDown.get(i)).coordZ;
+    pushMatrix();
+      // Scale Down by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+  stroke(0,255,0);
+  for (int i = 1; i < listaCornerRightDown.size(); i++)
+  {
+    float x = (listaCornerRightDown.get(i)).coordX;
+    float y = (listaCornerRightDown.get(i)).coordY;
+    float z = (listaCornerRightDown.get(i)).coordZ;
+    pushMatrix();
+      // Scale Down by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+  
 }
 
 
