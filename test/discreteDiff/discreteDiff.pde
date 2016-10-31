@@ -8,12 +8,14 @@ Kinect kinect;
 PImage img;
 int[] depth;
 float angle;
-int skip ;
+int skipX,skipY;
 int skipMes = 14;
 // We'll use a lookup table so that we don't have to repeat the math over and over
 float[] depthLookUp = new float[2048];
 float bigDist = 0.30f, smallDist = 0.15f;
 int row = 350, row1 = 370;
+
+
 
 int scanUp = 5, scanDown = 5;
 
@@ -25,6 +27,8 @@ ArrayList<CornerRight> listaCornerRightDown = new ArrayList<CornerRight>();
 
 ArrayList<CornerLeft> listaCornerLeftMid = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRightMid = new ArrayList<CornerRight>();
+ArrayList<ObjectNeg> objects = new ArrayList<ObjectNeg>();
+
 
 // Store laserScans
 ArrayList<PVector[]> scans = new ArrayList<PVector[]>();
@@ -55,7 +59,7 @@ void setup(){
   
   kinect = new Kinect(this);
   kinect.initDepth();
-  skip = 7;
+  skipY = 7; skipX=3;
   angle = kinect.getTilt();
  
   depthLookUp = new float[2048];
@@ -89,7 +93,53 @@ void draw(){
   findCorners();  
   drawRoutine();
   
+  detectObjects();
+  
   updateCounters();
+}
+
+// TODO fix it
+void detectObjects(){
+  for (int i=0;i<listaCornerLeftUp.size();i++){
+    boolean cond = false;
+    for (int j=0;j<listaCornerRightUp.size() && !cond;j++){
+      if ( !cond && listaCornerLeftUp.get(i).coordX < listaCornerRightUp.get(j).coordX){
+       cond = true; 
+       ObjectNeg obj = new ObjectNeg(listaCornerLeftUp.get(i),listaCornerRightUp.get(j));
+         
+        stroke(0,255,255);
+        strokeWeight(15);
+        pushMatrix();
+          // Scale up by 200S
+          float factor = 200;
+          translate(listaCornerLeftUp.get(i).coordX * factor, listaCornerLeftUp.get(i).coordY * factor, factor-  listaCornerLeftUp.get(i).coordZ * factor);
+          // Draw a point
+          point(0,0);
+        popMatrix();
+        
+        stroke(255,255,0);
+        strokeWeight(15);
+        pushMatrix();
+          // Scale up by 200S
+          translate(listaCornerRightUp.get(j).coordX * factor, listaCornerRightUp.get(j).coordY * factor, factor-  listaCornerRightUp.get(j).coordZ * factor);
+          // Draw a point
+          point(0,0);
+        popMatrix();
+        
+        println(" idm : " + listaCornerLeftUp.get(i).coordX + "\t" + listaCornerRightUp.get(j).coordX  );
+           
+        stroke(0,0,255);
+        strokeWeight(20);
+        pushMatrix();
+          // Scale up by 200S
+          translate(obj.center.x * factor, obj.center.y * factor, factor-  listaCornerRightUp.get(j).coordZ * factor);
+          // Draw a point
+          point(0,0);
+        popMatrix();
+      
+      }
+    }
+  }
 }
 
 void drawRoutine()
@@ -158,8 +208,8 @@ void cleanCornersMemory(){
 void drawScenePCL(){  
  //println("UPP\t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
   
- for(int x = 0; x < kinect.width ; x += skip) {   
-    for(int y = 0; y < kinect.height; y += skip) {         
+ for(int x = 0; x < kinect.width ; x += skipX) {   
+    for(int y = 0; y < kinect.height; y += skipY) {         
       int offset = x + y * kinect.width;
       // Convert kinect data to world xyz coordinate
       int rawDepth = depth[offset];
@@ -168,12 +218,13 @@ void drawScenePCL(){
       strokeWeight(2);
       stroke(255);  
       
-      if (y == row || y == (row+scanUp*skip) || y == (row-scanDown*skip))
+      if (y == row || y == (row+scanUp*skipY) || y == (row-scanDown*skipY))
       {
          strokeWeight(4);
          stroke(255,0,0);
       }
       
+      /*
       for (int b = 0; b<listaCornerRightUp.size();b++)
       {
         // use euclidean norm instead
@@ -183,6 +234,7 @@ void drawScenePCL(){
            stroke(255,0,0);
         }
       }
+      */
       
       
       pushMatrix();

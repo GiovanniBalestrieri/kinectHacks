@@ -6,9 +6,10 @@ class ObjectNeg{
  ObjectNeg(CornerLeft l, CornerRight r){
    cl = l;
    cr = r;
-   center.x = (cr.coordX - cl.coordX)/2; 
-   center.y = (cr.coordY - cl.coordY)/2; 
-   center.z = (cr.coordZ - cl.coordZ)/2; 
+   float x = (r.coordX - l.coordX)/2; 
+   float y = l.coordY;
+   float z = (l.coordZ - r.coordZ)/2; 
+   center = new PVector(x,y,z);
  }
  
  public void setCornerLeft(CornerLeft l)
