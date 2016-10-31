@@ -12,7 +12,7 @@ int skip ;
 int skipMes = 14;
 // We'll use a lookup table so that we don't have to repeat the math over and over
 float[] depthLookUp = new float[2048];
-float bigDist = 0.30f, smallDist = 0.07f;
+float bigDist = 0.30f, smallDist = 0.15f;
 int row = 350, row1 = 370;
 
 int scanUp = 5, scanDown = 5;
@@ -156,7 +156,7 @@ void cleanCornersMemory(){
 }
 
 void drawScenePCL(){  
- println("UPP\t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
+ //println("UPP\t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
   
  for(int x = 0; x < kinect.width ; x += skip) {   
     for(int y = 0; y < kinect.height; y += skip) {         
@@ -173,8 +173,17 @@ void drawScenePCL(){
          strokeWeight(4);
          stroke(255,0,0);
       }
- 
- // CheckObj
+      
+      for (int b = 0; b<listaCornerRightUp.size();b++)
+      {
+        // use euclidean norm instead
+        if (x-listaCornerRightUp.get(b).coordX <= 10 && y-listaCornerRightUp.get(b).coordY <= 10 && v.z-listaCornerRightUp.get(b).coordX <= smallDist)
+        {
+          println("AAA");
+           stroke(255,0,0);
+        }
+      }
+      
       
       pushMatrix();
         // Scale up by 200S
@@ -204,8 +213,7 @@ void saveRowsDepth(){
       filtLine1[x] = new PVector(x,(row+5*scanUp), depth[x+(row+5*scanUp)*kinect.width]);
       filtLine2[x] = new PVector(x,row,depth[x+row*kinect.width]);
       filtLine3[x] = new PVector(x,(row-5*scanDown),depth[x+(row-5*scanDown)*kinect.width]);
-    }   
-  
+    }     
 }
 
 
@@ -225,7 +233,7 @@ void findCorners(){
         
         if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z,I))
         {
-          // Corner Found
+          
         }
       }
     }
@@ -235,7 +243,7 @@ void findCorners(){
 boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2,int i)
 {
   boolean cond = false;
-  if (/*(p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist &&*/  (pz-m3) <= -bigDist)
+  if ((p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist */ && (pz-m3) <= -bigDist)
   {
     stroke(255,0,255);
     if (i == 0)
@@ -287,7 +295,7 @@ float rawDepthToMeters(int depthValue) {
 void drawCorners(){
   strokeWeight(10);
   stroke(255,0,255);
-  println("UP \t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
+  //println("UP \t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
   for (int i = 0; i < listaCornerLeftUp.size(); i++)
   {
     float x = (listaCornerLeftUp.get(i)).coordX;
@@ -320,7 +328,7 @@ void drawCorners(){
   
   
   stroke(255,0,255);
-  println("Mid \t\tCL: " + listaCornerLeftMid.size()+ " CR: " + listaCornerRightMid.size());
+  //println("Mid \t\tCL: " + listaCornerLeftMid.size()+ " CR: " + listaCornerRightMid.size());
   for (int i = 0; i < listaCornerLeftMid.size(); i++)
   {
     float x = (listaCornerLeftMid.get(i)).coordX;
@@ -352,7 +360,7 @@ void drawCorners(){
   // DOWN
   
   stroke(255,0,255);
-  println("Down \t\tCL: " + listaCornerLeftDown.size()+ " CR: " + listaCornerRightDown.size());
+  //println("Down \t\tCL: " + listaCornerLeftDown.size()+ " CR: " + listaCornerRightDown.size());
   for (int i = 0; i < listaCornerLeftDown.size(); i++)
   {
     float x = (listaCornerLeftDown.get(i)).coordX;
