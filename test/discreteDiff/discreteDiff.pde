@@ -16,14 +16,19 @@ float bigDist = 0.30f, smallDist = 0.07f;
 int row = 350, row1 = 370;
 ArrayList<CornerLeft> listaCornerLeft = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRight = new ArrayList<CornerRight>();
+
+// Store laserScans
+ArrayList<PVector[]> scans = new ArrayList<PVector[]>();
+
+
 float[] corners = new float[10];
 MedianFilter medLine = new MedianFilter((byte)3,0);
 
-int[] filtLine1;
-int[] filtLine2;
-int[] filtLine3;
+PVector[] filtLine1;
+PVector[] filtLine2;
+PVector[] filtLine3;
 int contSkip = 0, historyClean = 0;
-int frameRateKinect = 12;
+int frameRateKinect = 20;
 PVector maxOnLine = new PVector(0,0,0);
 
 boolean drawSceneB = true, drawCornersB = true, drawMaxB = false;
@@ -56,9 +61,13 @@ void setup(){
   filtLine3 = new int[(int) (kinect.width/skip)+1];
   */
   println(" f "+ kinect.width + " ; " + kinect.height);
-  filtLine1 = new int[(int) (kinect.width)];
-  filtLine2 = new int[(int) (kinect.width)];
-  filtLine3 = new int[(int) (kinect.width)];
+  filtLine1 = new PVector[(kinect.width)];
+  filtLine2 = new PVector[(kinect.width)];
+  filtLine3 = new PVector[(kinect.width)];
+  
+  scans.add(filtLine1);
+  scans.add(filtLine3);
+  scans.add(filtLine2);
 }
 
 void draw(){
@@ -73,7 +82,7 @@ void draw(){
   strokeWeight(2);
   saveRowsDepth();
   cleanCornersMemory();
-  findCorners(filtLine1,filtLine2,filtLine3);  
+  findCorners();  
   drawRoutine();
   
   updateCounters();
@@ -156,53 +165,37 @@ void drawScenePCL(){
 }
 
 void saveRowsDepth(){
-  for(int x = 0; x < kinect.width ; x += 1) { 
-    //medLine.in((float) depth[x+row*kinect.width]);
-    filtLine1[x] = (int) depth[x+row*kinect.width];
-    filtLine2[x] = (int) depth[x+(row+1)*kinect.width];
-    filtLine3[x] = (int) depth[x+(row+2)*kinect.width];
-  }   
+  filtLine1 = scans.get(0);
+  filtLine2 = scans.get(1);
+  filtLine3 = scans.get(2);
+  
+    for(int x = 0; x < kinect.width ; x += 1) {       
+      filtLine1[x] = new PVector(x,row,depth[x+row*kinect.width]);
+      filtLine2[x] = new PVector(x,(row+20), depth[x+(row+20)*kinect.width]);
+      filtLine3[x] = new PVector(x,(row-20),depth[x+(row-20)*kinect.width]);
+    }   
+  
 }
 
 
-boolean findMaximum(int[] a1){  
-  boolean res = false;
-  int far = 0;
-  int xFar = 0;
-  for(int x = skipMes*2; x < a1.length-skipMes*2 ; x++) 
-  { 
-    if (a1[x]>far)
-    {
-      far = a1[1];
-      xFar = x;
-    }
-  }
-  if (xFar > 0)  
+void findCorners(){  
+  for(int I = 0; I < scans.size(); I++)
   {
-    maxOnLine = depthToWorld(xFar, row, far);
-    res = true;
-    println("\t\t\t\t\t\tmax: " + maxOnLine.z);
-  }
-  return res; 
-}
-
-void findCorners(int[] a1, int[] a2, int[] a3){  
-  for(int x = 3*skipMes; x < a1.length-2*skipMes ; x++) 
-  { 
-    PVector v1 = depthToWorld(x, row, a1[x]);
-    PVector v2 = depthToWorld(x, row, a2[x]);
-    PVector v3 = depthToWorld(x, row, a3[x]);
-    if (v1.z <= 5 && v2.z <= 5 && v3.z <= 5)
-    {      
-      PVector m3 = depthToWorld(x-3*skipMes, row, a1[x-3*skipMes]);
-      PVector m1 = depthToWorld(x-skipMes, row, a1[x-skipMes]);
-      PVector p1 = depthToWorld(x+skipMes, row, a1[x+skipMes]);
-      PVector p2 = depthToWorld(x+2*skipMes, row, a1[x+2*skipMes]);
-      // Sistema sotto
-      if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
-      {
-        // Corner Found
-        //strokeWeight(10);
+    for(int x = 3*skipMes; x < scans.get(I).length-2*skipMes ; x++) 
+    { 
+      PVector v1 = depthToWorld(x, row, (int) (scans.get(I)[x]).z);
+      
+      if (v1.z <= 5)
+      {      
+        PVector m3 = depthToWorld((int) (scans.get(I)[x-3*skipMes]).x,(int) (scans.get(I)[x-3*skipMes]).y, (int) (scans.get(I)[x-3*skipMes]).z);
+        PVector m1 = depthToWorld((int) (scans.get(I)[x-skipMes]).x, (int) (scans.get(I)[x-skipMes]).y, (int) (scans.get(I)[x-skipMes]).z);
+        PVector p1 = depthToWorld((int) (scans.get(I)[x+skipMes]).x, (int) (scans.get(I)[x+skipMes]).y, (int)  (scans.get(I)[x+skipMes]).z);
+        PVector p2 = depthToWorld((int) (scans.get(I)[x+2*skipMes]).x, (int) (scans.get(I)[x+2*skipMes]).y, (int)  (scans.get(I)[x+2*skipMes]).z);
+        
+        if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
+        {
+          // Corner Found
+        }
       }
     }
   }
@@ -304,6 +297,29 @@ void drawCorners(){
   }
 }
 
+
+
+
+boolean findMaximum(PVector[] a1){  
+  boolean res = false;
+  float far = 0;
+  int xFar = 0;
+  for(int x = skipMes*2; x < a1.length-skipMes*2 ; x++) 
+  { 
+    if (a1[x].z > far)
+    {
+      far =  a1[x].z;
+      xFar = x;
+    }
+  }
+  if (xFar > 0)  
+  {
+    maxOnLine = a1[xFar]; // depthToWorld(xFar, row, far);
+    res = true;
+    println("\t\t\t\t\t\tmax: " + maxOnLine.z);
+  }
+  return res; 
+}
 
 void keyPressed() {
    if (key == 'a') 
