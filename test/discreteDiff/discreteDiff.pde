@@ -22,13 +22,14 @@ MedianFilter medLine = new MedianFilter((byte)3,0);
 int[] filtLine1;
 int[] filtLine2;
 int[] filtLine3;
-int contSkip = 0;
+int contSkip = 0, historyClean = 0;
+int frameRateKinect = 12;
 
 void setup(){
   // Rendering in P3D
   size(800, 600, P3D);
   
-  frameRate(20);
+  frameRate(frameRateKinect);
   
   cam = new PeasyCam(this, 100);
   cam.setMinimumDistance(0);
@@ -53,56 +54,84 @@ void setup(){
 
 void draw(){
   background(0);
-  depth = kinect.getRawDepth();
   
   
+  depth = kinect.getRawDepth(); 
   // Translate and rotate
-  translate(width/2, height/2, 1);
+  translate(0,0,0);
   stroke(255);
   beginShape(POINTS);
   strokeWeight(2);
-  
-  saveRowsDepth();
-  findCorners(filtLine1,filtLine2,filtLine3);
-  
-  //print(" LEN " +filtLine.length + "skippate" + contSkip);
-  contSkip = 0;
-  //print("Number of corners: " + detectDiscontinuities(filtLine) +  "\n");
     
-  for(int x = 0; x < kinect.width ; x += skip) {   
-    for(int y = 0; y < kinect.height; y += skip) {
-         
-      int offset = x + y * kinect.width;
+  saveRowsDepth();
+  cleanCornersMemory();
+  //findCorners(filtLine1,filtLine2,filtLine3);  
+  contSkip = 0;  
+  drawScenePCL();
+  updateCounters();
+}
 
+void updateCounters()
+{
+  historyClean ++;
+}
+
+void cleanCornersMemory(){
+  if (historyClean == frameRateKinect)
+  {
+      // If you are modifying an ArrayList during the loop,
+      // then you cannot use the enhanced loop syntax.
+      // In addition, when deleting in order to hit all elements, 
+      // you should loop through it backwards, as shown here:
+      for (int i = listaCornerLeft.size() - 1; i >= 0; i--) {
+        listaCornerLeft.remove(i);
+      } 
+      for (int i = listaCornerRight.size() - 1; i >= 0; i--) {
+        listaCornerRight.remove(i);
+      } 
+      historyClean = 0;
+  }
+}
+
+void drawScenePCL(){
+  
+ println("CL: " + listaCornerLeft.size()+ " CR: " + listaCornerRight.size());
+  
+ for(int x = 0; x < kinect.width ; x += skip) {   
+    for(int y = 0; y < kinect.height; y += skip) {         
+      int offset = x + y * kinect.width;
       // Convert kinect data to world xyz coordinate
       int rawDepth = depth[offset];
       PVector v = depthToWorld(x, y, rawDepth);
-
-      if (y == row && v.z <= 5)
+      
+      strokeWeight(2);
+      stroke(255);  
+      
+      /*
+      if (y == row && x >= 3*skipMes && x < kinect.width-2*skipMes)
       {
-        if (x>skip && x < kinect.width - skip*2)
-        {
-          ///println(filtLine[x-2*skip] + "\t" + filtLine[x-skip] + "\t" + filtLine[x]);
-          PVector m1 = depthToWorld(x-skipMes, y, depth[x-skipMes + y * kinect.width]);
-          PVector p1 = depthToWorld(x+skipMes, y, depth[x+skipMes + y * kinect.width]);
-          PVector p2 = depthToWorld(x+skipMes, y, depth[x+skipMes + y * kinect.width]);
-          if (isCorner(m1.z,v.x,v.y,v.z,p1.z,p2.z))
+          if (v.z <= 5 )
           {
-            strokeWeight(10);
+            PVector m3 = depthToWorld(x-3*skipMes, row, depth[offset - 3*skipMes]);
+            PVector m1 = depthToWorld(x-skipMes, row, depth[offset - skipMes]);
+            PVector p1 = depthToWorld(x+skipMes, row, depth[offset +skipMes]);
+            PVector p2 = depthToWorld(x+2*skipMes, row, depth[offset +2*skipMes ]);
+            if (isCorner(m3.z,m1.z,v.x,v.y,v.z,p1.z,p2.z))
+            {
+              // Corner Found
+              strokeWeight(10);
+            }
+            else
+            {
+              stroke(255,0,0);
+            }
           }
-          else
-            stroke(255,0,0);
-        }
-        else
-        {
-          strokeWeight(2);
-          stroke(255,0,0);
-        }
       }
-      else
+      */
+      
+      if (y == row)
       {
-        strokeWeight(2);
-        stroke(255);  
+         stroke(255,0,0);
       }
       
       pushMatrix();
@@ -113,9 +142,9 @@ void draw(){
         point(0,0);
       popMatrix();
     }
-  }  
+  }   
+ //drawCorners();  
 }
-
 void saveRowsDepth(){
   for(int x = 0; x < kinect.width ; x += skip) { 
     //medLine.in((float) depth[x+row*kinect.width]);
@@ -127,43 +156,26 @@ void saveRowsDepth(){
 }
 
 void findCorners(int[] a1, int[] a2, int[] a3){  
-  for(int x = 0; x < kinect.width ; x += skip) 
+  for(int x = 2*skipMes; x < a1.length-2*skipMes ; x++) 
   { 
     PVector v1 = depthToWorld(x, row, a1[x]);
     PVector v2 = depthToWorld(x, row, a2[x]);
     PVector v3 = depthToWorld(x, row, a3[x]);
     if (v1.z <= 5 && v2.z <= 5 && v3.z <= 5)
     {
+      
+      PVector m3 = depthToWorld(x-3*skipMes, row, a1[x-3*skipMes]);
       PVector m1 = depthToWorld(x-skipMes, row, a1[x-skipMes]);
       PVector p1 = depthToWorld(x+skipMes, row, a1[x+skipMes]);
-      PVector p2 = depthToWorld(x+skipMes, row, a1[x+skipMes]);
-      if (isCorner(m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
+      PVector p2 = depthToWorld(x+2*skipMes, row, a1[x+2*skipMes]);
+      // Sistema sotto
+      if (isCorner(m3.z,m1.z,v1.x,v1.y,v1.z,p1.z,p2.z))
       {
-        strokeWeight(10);
-      }
-      else
-      {
-        stroke(255,0,0);
+        // Corner Found
+        //strokeWeight(10);
       }
     }
   }
-}
-
-void keyPressed() {
-  //if (key == CODED) {
-     if (key == 'a') {
-      angle = angle + 1;
-      kinect.setTilt(angle);
-      println("UP");
-    } 
-    else if (key == 'b'){
-      angle = angle - 1;
-      kinect.setTilt(angle);
-      println("DOWN");
-      }
-  //} else {
-   // println("boh");
-  //}
 }
 
 int detectDiscontinuities(float[] a)
@@ -172,30 +184,30 @@ int detectDiscontinuities(float[] a)
   for (int i = 1; i < a.length-1; i++)
   {
     if (a[i]-a[i-1]<-bigDist){
-        listaCornerLeft.add(new CornerLeft(i,row));
+        listaCornerLeft.add(new CornerLeft(i,row, a[i]));
         cont++;
     }
     else if (a[i]-a[i-1]>bigDist){
-        listaCornerRight.add(new CornerRight(i,row));
+        listaCornerRight.add(new CornerRight(i,row, a[i]));
          cont++;   
     }
   }  
   return cont; 
 }
 
-boolean isCorner(float m1, float px, float py, float p , float p1, float p2)
+boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2)
 {
   boolean cond = false;
-  if ((p1-m1)<= -bigDist && abs(p-p1) <= smallDist && abs(p1-p2) <= smallDist && (p-m1)<= -bigDist)
+  if ((p2-m3)<= -bigDist && (p1-m1)<= -bigDist && abs(p1-p2) <= smallDist /*&& abs(pz-m1) <= smallDist */ && (pz-m3) <= -bigDist)
   {
     stroke(255,0,255);
-    listaCornerLeft.add(new CornerLeft(px,py));
+    listaCornerLeft.add(new CornerLeft(px,py,p1));
     cond =  true;
   }
-  else if ((p1-m1)>= bigDist && abs(p-m1) <= smallDist && (p-p1) <= -bigDist*0.9)
+  else if ((p2-m3) >= bigDist &&  (p1-m1) >= bigDist && abs(p1-p2) <= smallDist /* && abs(p1-p2) <= smallDist */ && abs(pz-m3) <= smallDist /*&& abs(pz-m3) <= smallDist */)
   {
     stroke(0,255,0);
-    listaCornerRight.add(new CornerRight(px,py)); 
+    listaCornerRight.add(new CornerRight(px,py,m1)); 
     cond =  true;
   }    
   return cond;
@@ -222,4 +234,54 @@ float rawDepthToMeters(int depthValue) {
     return (float)(1.0 / ((double)(depthValue) * -0.0030711016 + 3.3309495161));
   }
   return 0.0f;
+}
+
+
+void drawCorners(){
+  strokeWeight(5);
+  stroke(255,0,255);
+  println("CL: " + listaCornerLeft.size()+ " CR: " + listaCornerRight.size());
+  for (int i = 0; i < listaCornerLeft.size(); i++)
+  {
+    float x = (listaCornerLeft.get(i)).coordX;
+    float y = (listaCornerLeft.get(i)).coordY;
+    float z = (listaCornerLeft.get(i)).coordZ;
+    pushMatrix();
+      // Scale up by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+  stroke(0,255,0);
+  for (int i = 1; i < listaCornerRight.size(); i++)
+  {
+    float x = (listaCornerRight.get(i)).coordX;
+    float y = (listaCornerRight.get(i)).coordY;
+    float z = (listaCornerRight.get(i)).coordZ;
+    pushMatrix();
+      // Scale up by 200S
+      float factor = 200;
+      translate(x * factor, y * factor, factor-z * factor);
+      // Draw a point
+      point(0,0);
+    popMatrix();
+  }
+}
+
+
+void keyPressed() {
+   if (key == 'a') 
+   {
+    angle = angle + 1;
+    kinect.setTilt(angle);
+    println("UP");
+  } 
+  else if (key == 'b')
+  {
+    angle = angle - 1;
+    kinect.setTilt(angle);
+    println("DOWN");
+  }
 }
