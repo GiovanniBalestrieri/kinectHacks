@@ -15,7 +15,10 @@ float[] depthLookUp = new float[2048];
 float bigDist = 0.30f, smallDist = 0.15f;
 int row = 350, row1 = 370;
 
+HashMap<CornerLeft,CornerLeft> distanzeL = new HashMap<CornerLeft,CornerLeft>();
+HashMap<CornerRight,CornerRight> distanzeR = new HashMap<CornerRight,CornerRight>();
 
+float neighborDist = 0.1;
 
 int scanUp = 5, scanDown = 5;
 
@@ -28,6 +31,7 @@ ArrayList<CornerRight> listaCornerRightDown = new ArrayList<CornerRight>();
 ArrayList<CornerLeft> listaCornerLeftMid = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRightMid = new ArrayList<CornerRight>();
 ArrayList<ObjectNeg> objects = new ArrayList<ObjectNeg>();
+ArrayList<Gateway> gateways = new ArrayList<Gateway>();
 
 
 // Store laserScans
@@ -59,7 +63,7 @@ void setup(){
   
   kinect = new Kinect(this);
   kinect.initDepth();
-  skipY = 7; skipX=3;
+  skipY = 7; skipX=7;
   angle = kinect.getTilt();
  
   depthLookUp = new float[2048];
@@ -100,7 +104,47 @@ void draw(){
 
 // TODO fix it
 void detectObjects(){
-  for (int i=0;i<listaCornerLeftUp.size();i++){
+  for (int i=0;i<listaCornerRightUp.size();i++){
+    boolean cond = false;
+    for (int j=0;j<listaCornerLeftUp.size();j++){
+      
+      println("AA  R" + (listaCornerRightUp.get(i)).coordX + " L: " + (listaCornerLeftUp.get(j)).coordX);
+      // Se si trova più a dx del corner in esame, salva dist
+      if ((listaCornerRightUp.get(i)).coordX > (listaCornerLeftUp.get(j)).coordX){
+        
+         println("BB  R" + (listaCornerRightUp.get(i)).coordX + " L: " + (listaCornerLeftUp.get(j)).coordX);
+        float a = Norm((listaCornerRightUp.get(i)).coordX,(listaCornerLeftUp.get(j)).coordX);
+        
+        Gateway g = new Gateway((listaCornerRightUp.get(i)).coordX+a/2,(listaCornerRightUp.get(i)).coordY,(listaCornerRightUp.get(i)).coordZ);
+        gateways.add(g);
+        
+        stroke(0,255,255);
+        strokeWeight(15);
+        pushMatrix();
+          // Scale up by 200S
+          float factor = 200;
+          translate(g.center.x * factor, g.center.y * factor, factor - g.center.z * factor);
+          // Draw a point
+          point(0,0);
+        popMatrix();
+        
+        cond = true;
+        
+        break;
+        /*
+        if (a < neighborDist){
+                distanzeL.put(listaCornerLeftUp.get(j),listaCornerRightUp.get(i));
+        }
+        */
+      }
+      if (cond)
+      {
+        cond = false;
+        break;
+      }
+      
+    }
+    /*
     boolean cond = false;
     for (int j=0;j<listaCornerRightUp.size() && !cond;j++){
       if ( !cond && listaCornerLeftUp.get(i).coordX < listaCornerRightUp.get(j).coordX){
@@ -139,6 +183,7 @@ void detectObjects(){
       
       }
     }
+    */
   }
 }
 
@@ -480,4 +525,8 @@ void keyPressed() {
     kinect.setTilt(angle);
     println("DOWN");
   }
+}
+
+float  Norm(float a, float b){
+  return sqrt(pow(a,2)+pow(b,2));
 }
