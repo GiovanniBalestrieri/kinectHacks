@@ -5,6 +5,10 @@ import peasy.*;
 PeasyCam cam;
 
 Kinect kinect;
+
+
+
+
 PImage img;
 int[] depth;
 float angle;
@@ -53,6 +57,8 @@ boolean drawSceneB = true, drawCornersB = true, drawMaxB = false;
 void setup(){
   // Rendering in P3D
   size(800, 600, P3D);
+  
+  println(showGatewayPoint);
   
   frameRate(frameRateKinect);
   
