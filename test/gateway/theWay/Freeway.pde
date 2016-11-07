@@ -1,11 +1,11 @@
-public class Gateway
+public class Freeway
 {
   int minX;
   int gateElements[] = new int[800];
   PVector vector;
   ArrayList<PVector> gateElem;
   
-  public Gateway(int xmin, PVector vec)
+  public Freeway(int xmin, PVector vec)
   { 
     minX = xmin;
     gateElements[0] = xmin;
@@ -13,7 +13,7 @@ public class Gateway
     gateElem.add(vec);    
   }
   
-  public Gateway()
+  public Freeway()
   {   
     gateElem = new ArrayList<PVector>();  
   }

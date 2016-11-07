@@ -33,15 +33,17 @@ ArrayList<CornerRight> listaCornerRightDown = new ArrayList<CornerRight>();
 ArrayList<CornerLeft> listaCornerLeftMid = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRightMid = new ArrayList<CornerRight>();
 //ArrayList<ObjectNeg> objects = new ArrayList<ObjectNeg>();
+ArrayList<Freeway> freeways = new ArrayList<Freeway>();
+
 ArrayList<Gateway> gateways = new ArrayList<Gateway>();
 
-
-ArrayList<Gateway> gates = new ArrayList<Gateway>();
+ArrayList<Freeway> gates = new ArrayList<Freeway>();
 
 
 // Store laserScans
 ArrayList<PVector[]> scans = new ArrayList<PVector[]>();
 
+Gateway finalWay = new Gateway();
 
 float[] corners = new float[10];
 MedianFilter medLine = new MedianFilter((byte)3,0);
@@ -67,7 +69,7 @@ void setup(){
   
   kinect = new Kinect(this);
   kinect.initDepth();
-  skipY = 5; skipX=5;
+  skipY = 3; skipX=3;
   angle = kinect.getTilt();
  
   depthLookUp = new float[2048];
@@ -89,9 +91,14 @@ void setup(){
   print("Welcome");    
   
   
+ finalWay = new Gateway();
 }
 
 void draw(){
+  
+  gateways = new ArrayList<Gateway>();
+  
+  
   background(0);   
   initScene();
   depth = kinect.getRawDepth();
@@ -103,8 +110,31 @@ void draw(){
   
   
   drawRoutine();   
-  //detectObjects();
+  findTheWay();
   
+  showMeTheWay();
+  
+}
+
+void showMeTheWay(){
+  strokeWeight(30);
+  
+  if (finalWay.center.x < -0.3)
+    stroke(0,255,50);  
+  else if (finalWay.center.x >=  -0.3 && finalWay.center.x <= 0.4)    
+    stroke(255,255,0);  
+  else if (finalWay.center.x >=  0.4)
+    stroke(50,0,50);  
+    
+  println(" XXXX : " + finalWay.center.x );
+    
+  pushMatrix();
+    // Scale up by 200S
+    float factor = 200;
+    translate(finalWay.center.x * factor, finalWay.center.y * factor, factor-finalWay.center.z * factor);
+    // Draw a point
+    point(0,0);
+  popMatrix();
 }
 
 void initScene(){  
@@ -140,7 +170,14 @@ void drawMax(PVector v)
   popMatrix();
 }
 
-
+void findTheWay(){
+ finalWay = new Gateway();
+ for (int i = 0; i < gateways.size(); i++) {
+     if (gateways.get(i).center.z > finalWay.center.z){
+       finalWay = gateways.get(i);
+     } 
+  }
+}
 
 void drawScenePCL(){  
  for(int x = 0; x < kinect.width ; x += skipX) {   
@@ -199,9 +236,8 @@ void saveRowsDepth(){
 }
 
 void findCorners(){   
-  
-            float factor = 200;
-  Gateway gateway = new Gateway();
+  float factor = 200;
+  Freeway freeway = new Freeway();
   int xM1=2,xFirst;
   boolean first = true, primo = true;
   int df=0;  
@@ -256,7 +292,6 @@ void findCorners(){
       else {
           if (primo)
             xM1 = x;
-          println("Back  "+ x +"xm1   " + xM1);
           primo = false;
           if(abs(x-xM1)<=obstacleHorizonThreshold)
           {
@@ -266,69 +301,57 @@ void findCorners(){
               PVector v = new PVector(v1.x,v1.y,v1.z);
               //println("            First");
               xFirst = x;
-              gateway = new Gateway(x, v);
+              freeway = new Freeway(x, v);
               first = false;
-              gates = new ArrayList<Gateway>();
+              gates = new ArrayList<Freeway>();
               // Add this gateway to the gates Arrraylist
-              gates.add(gateway);
+              gates.add(freeway);
             }
             else
             {
               PVector v = new PVector(v1.x,v1.y,v1.z);
-              println("            Succ");
+              
               //save points to gateway
-              gateway.addElem(x, v);
+              freeway.addElem(x, v);
             }
           }
           else
           {
             PVector v = new PVector(v1.x,v1.y,v1.z);
             //after an obstacle detection -> new gateway -> add it to
-            gateway = new Gateway(x,v);
+            freeway = new Freeway(x,v);
             println("new gateway  ");
-            gates.add(gateway);
+            gates.add(freeway);
           }
           
-          /*
-          //print gateway point
-          strokeWeight(3);
-          stroke(0,100,0);
-          
-            
-          pushMatrix();
-            // Scale up by 200S
-            factor = 200;
-            translate(v1.x * factor, v1.y * factor, factor-v1.z * factor);
-            // Draw a point
-            point(0,0);
-          popMatrix();
-          */
           xM1=x;
-          strokeWeight(1);
-        }    
-      
+        }          
     }
   }
   
   
   int j=0;
   for (int i = 0; i<gates.size(); i++){
-    Gateway gat = gates.get(i);
+    Freeway gat = gates.get(i);
     if (gat.size()> robotWidth)
+    {
       j++;
-    strokeWeight(14);
-    stroke(0,0,255);
-    PVector middlePoint = gat.middlePoint();
-    if (showGatewayPoint){
-      point(middlePoint.x * factor, middlePoint.y * factor, factor-middlePoint.z * factor);
-      if (showGatewayArrow){
-        Arrow arrow = new Arrow(0,0,0,middlePoint.x* factor,middlePoint.y* factor, factor - middlePoint.z * factor);
-        arrow.drawarrow();
+      strokeWeight(14);
+      stroke(0,0,255);
+      PVector middlePoint = gat.middlePoint();
+      
+      Gateway g = new Gateway(middlePoint);
+      gateways.add(g);
+      if (showGatewayPoint){
+        point(middlePoint.x * factor, middlePoint.y * factor, factor-middlePoint.z * factor);
+        if (showGatewayArrow){
+          Arrow arrow = new Arrow(0,0,0,middlePoint.x* factor,middlePoint.y* factor, factor - middlePoint.z * factor);
+          arrow.drawarrow();
+        }
       }
     }
   }
-  println("Number of gateways =" +j);
-  
+  println("Number of ways =" +j);  
 }
 
 boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2,int i)
