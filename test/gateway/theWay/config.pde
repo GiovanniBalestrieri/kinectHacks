@@ -1,14 +1,7 @@
-
-
-// Show Gateway
-boolean showGatewayPoint = false;
-boolean showGatewayArrow = false;
-
-
 int skipPx = 2;
 
 // Robot Width
-int robotWidth = 300;
+int robotWidth = 800;
 // Obstacle dimension for horizon segmentation 
 int obstacleHorizonThreshold = 20;
 
@@ -27,3 +20,5 @@ float[] edgesSx = new float[maxEdges];
 // Verbosity
 
 boolean VERBOSE_MOTOR = false;
+boolean showGatewayArrow = false;
+boolean showGatewayPoint = true;

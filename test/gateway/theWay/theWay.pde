@@ -7,8 +7,6 @@ PeasyCam cam;
 Kinect kinect;
 
 
-
-
 PImage img;
 int[] depth;
 float angle;
@@ -34,8 +32,11 @@ ArrayList<CornerRight> listaCornerRightDown = new ArrayList<CornerRight>();
 
 ArrayList<CornerLeft> listaCornerLeftMid = new ArrayList<CornerLeft>();
 ArrayList<CornerRight> listaCornerRightMid = new ArrayList<CornerRight>();
-ArrayList<ObjectNeg> objects = new ArrayList<ObjectNeg>();
+//ArrayList<ObjectNeg> objects = new ArrayList<ObjectNeg>();
 ArrayList<Gateway> gateways = new ArrayList<Gateway>();
+
+
+ArrayList<Gateway> gates = new ArrayList<Gateway>();
 
 
 // Store laserScans
@@ -56,7 +57,7 @@ boolean drawSceneB = true, drawCornersB = true, drawMaxB = false;
 
 void setup(){
   // Rendering in P3D
-  size(1000, 800, P3D); 
+  size(800, 600, P3D); 
   frameRate(frameRateKinect);
   
   cam = new PeasyCam(this, 100);
@@ -91,9 +92,9 @@ void setup(){
 }
 
 void draw(){
-  depth = kinect.getRawDepth();
   background(0);   
   initScene();
+  depth = kinect.getRawDepth();
   
   
   saveRowsDepth();
@@ -104,56 +105,14 @@ void draw(){
   drawRoutine();   
   //detectObjects();
   
-  updateCounters();
 }
 
-void initScene(){
-  
+void initScene(){  
   // Translate and rotate
   translate(0,0,0);
   stroke(255);
   beginShape(POINTS);
   strokeWeight(2);
-}
-
-// TODO fix it
-void detectObjects(){
-  for (int i=0;i<listaCornerRightUp.size();i++){
-    boolean cond = false;
-    for (int j=0;j<listaCornerLeftUp.size();j++){
-      
-      //println(" R" + (listaCornerRightUp.get(i)).coordX + " L: " + (listaCornerLeftUp.get(j)).coordX);
-      // Se si trova più a dx del corner in esame, salva dist
-      if ((listaCornerRightUp.get(i)).coordX > (listaCornerLeftUp.get(j)).coordX){
-        
-        //println("BB  R" + (listaCornerRightUp.get(i)).coordX + " L: " + (listaCornerLeftUp.get(j)).coordX);
-        float a = Norm((listaCornerRightUp.get(i)).coordX,(listaCornerLeftUp.get(j)).coordX);
-        
-        Gateway g = new Gateway((listaCornerRightUp.get(i)).coordX+a/2,(listaCornerRightUp.get(i)).coordY,(listaCornerRightUp.get(i)).coordZ);
-        gateways.add(g);
-        
-        stroke(0,255,255);
-        strokeWeight(15);
-        pushMatrix();
-          // Scale up by 200S
-          float factor = 200;
-          translate(g.center.x * factor, g.center.y * factor, factor - g.center.z * factor);
-          // Draw a point
-          point(0,0);
-        popMatrix();
-        
-        cond = true;
-        
-        break;
-      }
-      if (cond)
-      {
-        cond = false;
-        break;
-      }
-      
-    }
-  }
 }
 
 void drawRoutine()
@@ -181,16 +140,9 @@ void drawMax(PVector v)
   popMatrix();
 }
 
-void updateCounters()
-{
-  historyClean ++;
-}
-
 
 
 void drawScenePCL(){  
- //println("UPP\t\tCL: " + listaCornerLeftUp.size()+ " CR: " + listaCornerRightUp.size());
-  
  for(int x = 0; x < kinect.width ; x += skipX) {   
     for(int y = 0; y < kinect.height; y += skipY) {         
       int offset = x + y * kinect.width;
@@ -201,7 +153,7 @@ void drawScenePCL(){
       {
         PVector v = depthToWorld(x, y, rawDepth);
         
-        strokeWeight(1);
+        strokeWeight(2);
         stroke(255);  
         
         if (y == row || y == (row+scanUp*skipY) || y == (row-scanDown*skipY))
@@ -246,9 +198,9 @@ void saveRowsDepth(){
     }     
 }
 
-
-void findCorners(){    
-  int gate[] = new int[800];
+void findCorners(){   
+  
+            float factor = 200;
   Gateway gateway = new Gateway();
   int xM1=2,xFirst;
   boolean first = true, primo = true;
@@ -271,8 +223,6 @@ void findCorners(){
         {
           
         }
-        
-        
         */
         // Right Edge
         if ((p1.z - m1.z) > bigDist)
@@ -285,10 +235,8 @@ void findCorners(){
           if (I == 1)
             listaCornerRightMid.add(new CornerRight(v1.x,v1.y,v1.z,I));
           if (I == 2)
-            listaCornerRightDown.add(new CornerRight(v1.x,v1.y,v1.z,I));
-            
-        }
-        
+            listaCornerRightDown.add(new CornerRight(v1.x,v1.y,v1.z,I));            
+        }        
         // Left Edge
         if ((p2.z - m3.z) < -bigDist &&  abs(v1.z - m3.z) < abs(bigDist) )
         {
@@ -300,13 +248,87 @@ void findCorners(){
             if (I == 1)
               listaCornerLeftMid.add(new CornerLeft(v1.x,v1.y,v1.z,I));
             if (I == 2)
-              listaCornerLeftDown.add(new CornerLeft(v1.x,v1.y,v1.z,I));
-              
-        }
-        
+              listaCornerLeftDown.add(new CornerLeft(v1.x,v1.y,v1.z,I));              
+        }        
+      }
+      
+      // Background points
+      else {
+          if (primo)
+            xM1 = x;
+          println("Back  "+ x +"xm1   " + xM1);
+          primo = false;
+          if(abs(x-xM1)<=obstacleHorizonThreshold)
+          {
+            // inside a gateway
+            if (first)
+            {
+              PVector v = new PVector(v1.x,v1.y,v1.z);
+              //println("            First");
+              xFirst = x;
+              gateway = new Gateway(x, v);
+              first = false;
+              gates = new ArrayList<Gateway>();
+              // Add this gateway to the gates Arrraylist
+              gates.add(gateway);
+            }
+            else
+            {
+              PVector v = new PVector(v1.x,v1.y,v1.z);
+              println("            Succ");
+              //save points to gateway
+              gateway.addElem(x, v);
+            }
+          }
+          else
+          {
+            PVector v = new PVector(v1.x,v1.y,v1.z);
+            //after an obstacle detection -> new gateway -> add it to
+            gateway = new Gateway(x,v);
+            println("new gateway  ");
+            gates.add(gateway);
+          }
+          
+          /*
+          //print gateway point
+          strokeWeight(3);
+          stroke(0,100,0);
+          
+            
+          pushMatrix();
+            // Scale up by 200S
+            factor = 200;
+            translate(v1.x * factor, v1.y * factor, factor-v1.z * factor);
+            // Draw a point
+            point(0,0);
+          popMatrix();
+          */
+          xM1=x;
+          strokeWeight(1);
+        }    
+      
+    }
+  }
+  
+  
+  int j=0;
+  for (int i = 0; i<gates.size(); i++){
+    Gateway gat = gates.get(i);
+    if (gat.size()> robotWidth)
+      j++;
+    strokeWeight(14);
+    stroke(0,0,255);
+    PVector middlePoint = gat.middlePoint();
+    if (showGatewayPoint){
+      point(middlePoint.x * factor, middlePoint.y * factor, factor-middlePoint.z * factor);
+      if (showGatewayArrow){
+        Arrow arrow = new Arrow(0,0,0,middlePoint.x* factor,middlePoint.y* factor, factor - middlePoint.z * factor);
+        arrow.drawarrow();
       }
     }
   }
+  println("Number of gateways =" +j);
+  
 }
 
 boolean isCorner(float m3,  float m1 , float px, float py, float pz, float p1, float p2,int i)
@@ -498,6 +520,10 @@ void keyPressed() {
     kinect.setTilt(angle);
     if (VERBOSE_MOTOR)
       println("DOWN");
+  }
+  else if (key == 'g')
+  {
+    showGatewayArrow = !showGatewayArrow;
   }
 }
 
